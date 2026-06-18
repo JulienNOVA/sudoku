@@ -32,7 +32,6 @@ input {
  border:1px solid #ccc;
 }
 
-/* username jeu centré et auto */
 #usernameGame {
  display:block;
  margin:15px auto;
@@ -141,11 +140,14 @@ table {margin:auto; border-collapse:collapse;} th,td{padding:8px 12px; border:1p
 </div>
 
 <script>
-let level='', assist='';
+let level='easy';
+let assist='A1';
 let solution = [];
 let puzzle = [];
 let startTime;
 let errors = 0;
+
+window.onload = () => highlightButtons();
 
 function selectLevel(l){ level=l; highlightButtons(); }
 function selectAssist(a){ assist=a; highlightButtons(); }
