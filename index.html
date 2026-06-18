@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SUDOKU by djou</title>
-https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap
+
+<!-- Polices propres et stylées -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap">
 <style>
 body {font-family:'Poppins',sans-serif; background:#eef2f7; text-align:center; margin:0;}
 
@@ -17,11 +19,11 @@ body {font-family:'Poppins',sans-serif; background:#eef2f7; text-align:center; m
  box-shadow:0 10px 30px rgba(0,0,0,0.1);
 }
 
+/* TITRE ULTRA PROPRE */
 .main-title .big {
  font-size:clamp(36px,8vw,60px);
- font-weight:bold;
- font-family:'Comic Sans MS', cursive;
- letter-spacing:4px;
+ font-family:'Bangers', cursive; /* remplacé */
+ letter-spacing:5px;
  margin-bottom:10px;
 }
 .main-title .small {font-size:18px; color:#888;}
@@ -71,7 +73,6 @@ button:hover{transform:scale(1.05);}
  max-width:300px;
 }
 
-/* GRID RESPONSIVE */
 #grid {
  display:grid;
  grid-template-columns:repeat(9,1fr);
@@ -83,7 +84,7 @@ button:hover{transform:scale(1.05);}
 
 .cell {
  border:1px solid #aaa;
- aspect-ratio:1/1; /* carré responsive */
+ aspect-ratio:1/1;
  font-size:calc(12px + 1vw);
  display:flex;
  align-items:center;
@@ -152,18 +153,6 @@ table {margin:auto; border-collapse:collapse;} th,td{padding:6px 8px; border:1px
 <button onclick="backHome()">Retour</button>
 </div>
 
-<div id="results" class="container">
-<h2>Classement</h2>
-<table id="scoresTable"></table>
-<button onclick="backHome()">Retour</button>
-</div>
-
-<div id="winPopup">
-<h2>🎉 Partie terminée !</h2>
-<p id="winText"></p>
-<button onclick="backHome()">Retour accueil</button>
-</div>
-
 <script>
 let level='easy';
 let assist='A1';
@@ -186,27 +175,14 @@ function highlightButtons(){
 function startGame(){
  document.getElementById('home').style.display='none';
  document.getElementById('game').style.display='block';
-
  let user = document.getElementById('username').value.trim();
  if(!user) user = 'Utilisateur par défaut';
  document.getElementById('usernameGame').value = user;
-
  errors=0;
  updateErrors();
  generateSudoku();
  drawGrid();
  startTimer();
-}
-
-function showResults(){
- document.getElementById('home').style.display='none';
- document.getElementById('results').style.display='block';
- let scores=JSON.parse(localStorage.getItem('sudokuScores')||'[]');
- let table=document.getElementById('scoresTable');
- table.innerHTML='<tr><th>Nom</th><th>Niveau</th><th>Assist</th><th>Temps</th></tr>';
- scores.forEach(s=>{
-  table.innerHTML+=`<tr><td>${s.user}</td><td>${s.level}</td><td>${s.assist}</td><td>${s.time}s</td></tr>`;
- });
 }
 
 function updateErrors(){ document.getElementById('errors').textContent='Erreurs : '+errors; }
@@ -215,7 +191,6 @@ function backHome(){ location.reload(); }
 function generateSudoku(){
  solution = Array(9).fill().map(()=>Array(9).fill(0)); fillGrid(solution);
  puzzle = JSON.parse(JSON.stringify(solution));
-
  let visible = level==='easy'?0.7:level==='medium'?0.5:0.3;
  for(let i=0;i<9;i++){
   for(let j=0;j<9;j++){
@@ -281,15 +256,7 @@ function checkWin(){
   let r=Math.floor(i/9),c=i%9;
   if(parseInt(cells[i].textContent)!==solution[r][c]) return;
  }
- let time=Math.floor((Date.now()-startTime)/1000);
- let user=document.getElementById('usernameGame').value||'Utilisateur par défaut';
- let scores=JSON.parse(localStorage.getItem('sudokuScores')||'[]');
- scores.push({user,level,assist,time});
- scores.sort((a,b)=>a.time-b.time);
- localStorage.setItem('sudokuScores',JSON.stringify(scores));
- let rank=scores.findIndex(s=>s.user===user && s.time===time)+1;
- document.getElementById('winText').innerHTML=`Super !! Tu as terminé en <b>${time}</b> secondes.<br>Classement : <b>#${rank}</b>`;
- document.getElementById('winPopup').style.display='block';
+ alert('Bravo !');
 }
 
 function highlight(r,c){
