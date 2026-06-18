@@ -1,1 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SUDOKU by djou</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet"><style>
+body {font-family:'Poppins',sans-serif; background:#eef2f7; text-align:center;}
 
+.container {
+ max-width:500px;
+ margin:60px auto;
+ background:white;
+ padding:30px;
+ border-radius:15px;
+ box-shadow:0 10px 30px rgba(0,0,0,0.1);
+}
+
+.main-title .big {
+ font-size:60px;
+ font-weight:bold;
+ font-family:'Comic Sans MS', cursive;
+ letter-spacing:4px;
+ margin-bottom:10px;
+}
+.main-title .small {font-size:20px; color:#888;}
+
+input {
+ margin-top:20px;
+ padding:10px;
+ width:80%;
+ border-radius:8px;
+ border:1px solid #ccc;
+}
+
+/* username jeu centré et auto */
+#usernameGame {
+ display:block;
+ margin:15px auto;
+ width:auto;
+ min-width:150px;
+ padding:10px 20px;
+ text-align:center;
+ border-radius:20px;
+ border:1px solid #ccc;
+ background:#f8f9fa;
+}
+
+h3 {margin-top:20px;}
+
+button {
+ padding:10px 15px;
+ margin:5px;
+ cursor:pointer;
+ border-radius:8px;
+ border:none;
+ transition:0.2s;
+}
+button:hover{transform:scale(1.05);} 
+.selected {background:#007BFF; color:white;}
+
+.score-btn {background:#6c757d; color:white; margin-top:20px;}
+.play-btn {
+ background:#28a745;
+ color:white;
+ font-size:18px;
+ padding:15px 25px;
+ margin-top:20px;
+}
+
+#grid {
+ display:grid;
+ grid-template-columns:repeat(9,1fr);
+ width:450px;
+ margin:20px auto;
+ border:4px solid black;
+}
+.cell {border:1px solid #aaa; height:50px; font-size:20px; text-align:center; line-height:50px;}
+.block-right { border-right:3px solid black !important; }
+.block-bottom { border-bottom:3px solid black !important; }
+
+.cell.blue {color:#007BFF; font-weight:bold;}
+.cell.green {background:#c8f7c5;}
+.cell.red {background:#f7c5c5;}
+.highlight {background:#e0e7ff;}
+
+#timer {position:absolute; right:20px; top:20px; font-size:18px; font-weight:bold;}
+#errors {position:absolute; left:20px; top:20px; font-size:18px; font-weight:bold; color:#c0392b;}
+
+#gameTitle {font-size:26px; font-weight:600; margin-top:10px;}
+
+#results {display:none;}
+table {margin:auto; border-collapse:collapse;} th,td{padding:8px 12px; border:1px solid #ccc;}
+
+#winPopup {position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:10px; box-shadow:0 5px 20px rgba(0,0,0,0.3); display:none;}
+</style>
+</head>
+<body>
+
+<div id="home" class="container">
+<div class="main-title">
+<div class="big">SUDOKU</div>
+<div class="small">by Djou</div>
+</div>
+
+<input id="username" placeholder="Nom utilisateur"><br>
+
+<h3>Niveau</h3>
+<button onclick="selectLevel('easy')">Facile</button>
+<button onclick="selectLevel('medium')">Moyen</button>
+<button onclick="selectLevel('hard')">Difficile</button>
+
+<h3>Assistance</h3>
+<button onclick="selectAssist('A1')">A1</button>
+<button onclick="selectAssist('A2')">A2</button>
+
+<br>
+<button class="score-btn" onclick="showResults()">Voir scores</button>
+<br>
+<button class="play-btn" onclick="startGame()">Lancer partie</button>
+</div>
+
+<div id="game" style="display:none;">
+<div id="gameTitle">SUDOKU by Djou</div>
+<input id="usernameGame" readonly>
+<div id="timer">0s</div>
+<div id="errors">Erreurs : 0</div>
+<div id="grid"></div>
+<button onclick="backHome()">Retour</button>
+</div>
+
+<div id="results" class="container">
+<h2>Classement</h2>
+<table id="scoresTable"></table>
+<button onclick="backHome()">Retour</button>
+</div>
+
+<div id="winPopup">
+<h2>🎉 Partie terminée !</h2>
+<p id="winText"></p>
+<button onclick="backHome()">Retour accueil</button>
+</div>
+
+<script>
+let level='', assist='';
+let solution = [];
+let puzzle = [];
+let startTime;
+let errors = 0;
+
+function selectLevel(l){ level=l; highlightButtons(); }
+function selectAssist(a){ assist=a; highlightButtons(); }
+
+function highlightButtons(){
+ document.querySelectorAll('#home button').forEach(b=>b.classList.remove('selected'));
+ if(level) document.querySelector(`button[onclick="selectLevel('${level}')"]`).classList.add('selected');
+ if(assist) document.querySelector(`button[onclick="selectAssist('${assist}')"]`).classList.add('selected');
+}
+
+function startGame(){
+ document.getElementById('home').style.display='none';
+ document.getElementById('game').style.display='block';
+
+ let user = document.getElementById('username').value.trim();
+ if(!user) user = 'Utilisateur par défaut';
+ document.getElementById('usernameGame').value = user;
+
+ errors=0;
+ updateErrors();
+ generateSudoku();
+ drawGrid();
+ startTimer();
+}
+
+function showResults(){
+ document.getElementById('home').style.display='none';
+ document.getElementById('results').style.display='block';
+ let scores=JSON.parse(localStorage.getItem('sudokuScores')||'[]');
+ let table=document.getElementById('scoresTable');
+ table.innerHTML='<tr><th>Nom</th><th>Niveau</th><th>Assist</th><th>Temps</th></tr>';
+ scores.forEach(s=>{
+  table.innerHTML+=`<tr><td>${s.user}</td><td>${s.level}</td><td>${s.assist}</td><td>${s.time}s</td></tr>`;
+ });
+}
+
+function updateErrors(){ document.getElementById('errors').textContent='Erreurs : '+errors; }
+function backHome(){ location.reload(); }
+
+function generateSudoku(){
+ solution = Array(9).fill().map(()=>Array(9).fill(0)); fillGrid(solution);
+ puzzle = JSON.parse(JSON.stringify(solution));
+
+ let visible = level==='easy'?0.7:level==='medium'?0.5:0.3;
+ for(let i=0;i<9;i++){
+  for(let j=0;j<9;j++){
+    if(Math.random()>visible) puzzle[i][j]=0;
+  }
+ }
+}
+
+function fillGrid(grid){
+ function valid(r,c,n){
+  for(let i=0;i<9;i++) if(grid[r][i]==n||grid[i][c]==n) return false;
+  let br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) if(grid[br+i][bc+j]==n) return false;
+  return true;
+ }
+ function solve(){
+  for(let r=0;r<9;r++){
+   for(let c=0;c<9;c++){
+    if(grid[r][c]==0){
+     let nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+     for(let n of nums){
+      if(valid(r,c,n)){ grid[r][c]=n; if(solve()) return true; grid[r][c]=0; }
+     }
+     return false;
+    }
+   }
+  }
+  return true;
+ }
+ solve();
+}
+
+function drawGrid(){
+ let grid=document.getElementById('grid');
+ grid.innerHTML='';
+ for(let r=0;r<9;r++){
+  for(let c=0;c<9;c++){
+   let cell=document.createElement('div'); cell.className='cell';
+   if((c+1)%3==0&&c!=8) cell.classList.add('block-right');
+   if((r+1)%3==0&&r!=8) cell.classList.add('block-bottom');
+   if(puzzle[r][c]!=0){ cell.textContent=puzzle[r][c]; cell.classList.add('blue'); }
+   else { cell.contentEditable=true; cell.oninput=(e)=>handleInput(e,r,c); }
+   cell.onclick=()=>highlight(r,c);
+   grid.appendChild(cell);
+  }
+ }
+}
+
+function handleInput(e,r,c){
+ let val=parseInt(e.target.textContent);
+ if(!val||val>9){ e.target.textContent=''; return; }
+ e.target.classList.remove('red','green');
+ if(assist==='A1'){
+  if(val===solution[r][c]){ e.target.classList.add('green'); e.target.contentEditable=false; }
+  else { e.target.classList.add('red'); errors++; updateErrors(); }
+ }
+ checkWin();
+}
+
+function checkWin(){
+ let cells=document.querySelectorAll('.cell');
+ for(let i=0;i<cells.length;i++){
+  let r=Math.floor(i/9),c=i%9;
+  if(parseInt(cells[i].textContent)!==solution[r][c]) return;
+ }
+ let time=Math.floor((Date.now()-startTime)/1000);
+ let user=document.getElementById('usernameGame').value||'Utilisateur par défaut';
+ let scores=JSON.parse(localStorage.getItem('sudokuScores')||'[]');
+ scores.push({user,level,assist,time});
+ scores.sort((a,b)=>a.time-b.time);
+ localStorage.setItem('sudokuScores',JSON.stringify(scores));
+ let rank=scores.findIndex(s=>s.user===user && s.time===time)+1;
+ document.getElementById('winText').innerHTML=`Super !! Tu as terminé en <b>${time}</b> secondes.<br>Classement : <b>#${rank}</b>`;
+ document.getElementById('winPopup').style.display='block';
+}
+
+function highlight(r,c){
+ document.querySelectorAll('.cell').forEach((el,i)=>{
+  let rr=Math.floor(i/9),cc=i%9;
+  el.classList.remove('highlight');
+  if(rr===r||cc===c) el.classList.add('highlight');
+ });
+}
+
+function startTimer(){ startTime=Date.now(); setInterval(()=>{
+ document.getElementById('timer').textContent=Math.floor((Date.now()-startTime)/1000)+'s';
+},1000); }
+</script>
+
+</body>
+</html>
